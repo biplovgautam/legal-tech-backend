@@ -116,21 +116,40 @@ This supports secure multi-tenancy and flexible RBAC.
 ```
 legal-tech-backend/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI application entry point
+│   ├── main.py                  # FastAPI app
+│   │
 │   ├── core/
+│   │   ├── config.py            # Env variables
+│   │   ├── database.py          # PostgreSQL connection
+│   │   └── security.py          # Password hashing + JWT
+│   │
+│   ├── models/                  # SQLAlchemy models
 │   │   ├── __init__.py
-│   │   └── config.py              # Application configuration
-│   └── api/
-│       ├── __init__.py
-│       └── v1/
-│           ├── __init__.py
-│           └── api_router.py      # API v1 routes
-├── .env.example                    # Environment variables template
-├── .gitignore                      # Git ignore rules
-├── requirements.txt                # Python dependencies
-├── run.py                          # Application runner
-└── README.MD                       # Project documentation
+│   │   ├── base.py
+│   │   ├── organization.py
+│   │   ├── user.py
+│   │   ├── role.py
+│   │   ├── permission.py
+│   │   ├── user_role.py
+│   │   └── role_permission.py
+│   │
+│   ├── schemas/                 # Pydantic schemas
+│   │   ├── __init__.py
+│   │   ├── auth.py              # Signup / signin schemas
+│   │   └── user.py
+│   │
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── v1/
+│   │       ├── __init__.py
+│   │       └── auth.py              # Signup & signin routes
+│   │
+│   └── __init__.py
+│
+├── requirements.txt
+├── run.py
+├── .env
+└── README.md
 ```
 
 ## 10. Quick Start
@@ -206,7 +225,7 @@ The API will be available at:
 This is the initial setup with basic FastAPI structure and health check endpoint.
 
 ### Upcoming Features
-- Database integration (PostgreSQL with SQLAlchemy 2.0)
+- Database integration (PostgreSQL with SQLAlchemy 2.0) done
 - Authentication (JWT + OAuth2)
 - Role-based access control (RBAC)
 - Multi-tenancy support
@@ -247,44 +266,3 @@ This backend:
 * Scales without redesign
 
 **MVP-ready. Production-safe.**
-
-## 17. Folder Structure
-
-```
-legal-tech-backend/
-├── app/
-│   ├── main.py                  # FastAPI app
-│   │
-│   ├── core/
-│   │   ├── config.py            # Env variables
-│   │   ├── database.py          # PostgreSQL connection
-│   │   └── security.py          # Password hashing + JWT
-│   │
-│   ├── models/                  # SQLAlchemy models
-│   │   ├── __init__.py
-│   │   ├── base.py
-│   │   ├── organization.py
-│   │   ├── user.py
-│   │   ├── role.py
-│   │   ├── permission.py
-│   │   ├── user_role.py
-│   │   └── role_permission.py
-│   │
-│   ├── schemas/                 # Pydantic schemas
-│   │   ├── __init__.py
-│   │   ├── auth.py              # Signup / signin schemas
-│   │   └── user.py
-│   │
-│   ├── api/
-│   │   ├── __init__.py
-│   │   └── v1/
-│   │       ├── __init__.py
-│   │       └── auth.py              # Signup & signin routes
-│   │
-│   └── __init__.py
-│
-├── requirements.txt
-├── run.py
-├── .env
-└── README.md
-```
