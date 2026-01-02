@@ -247,3 +247,44 @@ This backend:
 * Scales without redesign
 
 **MVP-ready. Production-safe.**
+
+## 17. Folder Structure
+
+```
+legal-tech-backend/
+├── app/
+│   ├── main.py                  # FastAPI app
+│   │
+│   ├── core/
+│   │   ├── config.py            # Env variables
+│   │   ├── database.py          # PostgreSQL connection
+│   │   └── security.py          # Password hashing + JWT
+│   │
+│   ├── models/                  # SQLAlchemy models
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── organization.py
+│   │   ├── user.py
+│   │   ├── role.py
+│   │   ├── permission.py
+│   │   ├── user_role.py
+│   │   └── role_permission.py
+│   │
+│   ├── schemas/                 # Pydantic schemas
+│   │   ├── __init__.py
+│   │   ├── auth.py              # Signup / signin schemas
+│   │   └── user.py
+│   │
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── v1/
+│   │       ├── __init__.py
+│   │       └── auth.py              # Signup & signin routes
+│   │
+│   └── __init__.py
+│
+├── requirements.txt
+├── run.py
+├── .env
+└── README.md
+```
