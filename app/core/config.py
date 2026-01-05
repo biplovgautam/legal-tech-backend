@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Legal Tech API"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = True
-    ENVIRONMENT: Literal["development", "staging", "production"] = "development"
+    ENVIRONMENT: Literal["development", "production"]
     
     HOST: str = "0.0.0.0"
     PORT: int = 8000
