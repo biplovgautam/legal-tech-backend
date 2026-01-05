@@ -12,6 +12,7 @@ from app.api import deps
 
 router = APIRouter()
 
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
     # 1. Check if user with email already exists
@@ -26,12 +27,12 @@ def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
     org_name = user_in.org_name
     if user_in.org_type == "solo":
         org_name = user_in.admin_name  # Use admin name for solo practice
-    
+
     # 3. Create Organization
     new_org = Organization(
         name=org_name,
-        org_type=user_in.org_type.upper(), # Store as SOLO or FIRM
-        is_active=True
+        org_type=user_in.org_type.upper(),  # Store as SOLO or FIRM
+        is_active=True,
     )
     db.add(new_org)
     db.commit()
@@ -44,7 +45,7 @@ def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
         hashed_password=hashed_password,
         name=user_in.admin_name,
         organization_id=new_org.id,
-        is_active=True
+        is_active=True,
     )
     db.add(new_user)
     db.commit()
@@ -52,19 +53,13 @@ def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
 
     # 5. Create "Super Admin" Role for this Organization
     # Note: In a real app, you might have a set of default roles to create
-    admin_role = Role(
-        name="Super Admin",
-        organization_id=new_org.id
-    )
+    admin_role = Role(name="Super Admin", organization_id=new_org.id)
     db.add(admin_role)
     db.commit()
     db.refresh(admin_role)
 
     # 6. Assign Role to User
-    user_role = UserRole(
-        user_id=new_user.id,
-        role_id=admin_role.id
-    )
+    user_role = UserRole(user_id=new_user.id, role_id=admin_role.id)
     db.add(user_role)
     db.commit()
 
@@ -73,20 +68,17 @@ def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
         "organization": {
             "id": new_org.id,
             "name": new_org.name,
-            "type": new_org.org_type
+            "type": new_org.org_type,
         },
-        "user": {
-            "id": new_user.id,
-            "email": new_user.email,
-            "name": new_user.name
-        }
+        "user": {"id": new_user.id, "email": new_user.email, "name": new_user.name},
     }
+
 
 @router.post("/login", response_model=Token)
 def login(response: Response, user_in: UserLogin, db: Session = Depends(deps.get_db)):
     # 1. Authenticate User
     user = db.query(User).filter(User.email == user_in.email).first()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -99,7 +91,7 @@ def login(response: Response, user_in: UserLogin, db: Session = Depends(deps.get
             detail="Incorrect password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
@@ -112,14 +104,15 @@ def login(response: Response, user_in: UserLogin, db: Session = Depends(deps.get
     # 3. Create Access Token with Tenant Context
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     expires_at = datetime.utcnow() + access_token_expires
-    
+    expires_at_http = expires_at.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
     access_token = create_access_token(
         data={
             "sub": str(user.id),
             "org_id": str(user.organization_id),
-            "org_type": org.org_type
+            "org_type": org.org_type,
         },
-        expires_delta=access_token_expires
+        expires_delta=access_token_expires,
     )
 
     # 4. Set HttpOnly Cookie
@@ -130,15 +123,18 @@ def login(response: Response, user_in: UserLogin, db: Session = Depends(deps.get
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         samesite="lax",
-        secure=settings.ENVIRONMENT == "production", # Only secure in production (HTTPS)
+        secure=settings.ENVIRONMENT
+        == "production",  # Only secure in production (HTTPS)
     )
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "org_type": org.org_type, # Frontend uses this to redirect
-        "expires_at": expires_at
+        "org_type": org.org_type,  # Frontend uses this to redirect
+        "expires_at": expires_at,
+        "expires_at_http": expires_at_http,
     }
+
 
 @router.post("/logout")
 def logout(response: Response, current_user: User = Depends(deps.get_current_user)):
@@ -146,6 +142,6 @@ def logout(response: Response, current_user: User = Depends(deps.get_current_use
         key="access_token",
         httponly=True,
         secure=settings.ENVIRONMENT == "production",
-        samesite="lax"
+        samesite="lax",
     )
     return {"message": "Logged out successfully"}
