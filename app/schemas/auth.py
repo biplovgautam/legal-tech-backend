@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, Literal
+from datetime import datetime
 
 class UserRegister(BaseModel):
     org_type: Literal["solo", "firm"]
@@ -30,3 +31,4 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     org_type: str
+    expires_at: datetime

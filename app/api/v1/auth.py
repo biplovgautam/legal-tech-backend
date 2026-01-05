@@ -6,7 +6,7 @@ from app.models.organization import Organization
 from app.models.role import Role
 from app.models.user_role import UserRole
 from app.core.security import get_password_hash, verify_password, create_access_token
-from datetime import timedelta
+from datetime import timedelta, datetime
 from app.core.config import settings
 from app.api import deps
 
@@ -111,6 +111,8 @@ def login(response: Response, user_in: UserLogin, db: Session = Depends(deps.get
 
     # 3. Create Access Token with Tenant Context
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expires_at = datetime.utcnow() + access_token_expires
+    
     access_token = create_access_token(
         data={
             "sub": str(user.id),
@@ -134,7 +136,8 @@ def login(response: Response, user_in: UserLogin, db: Session = Depends(deps.get
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "org_type": org.org_type # Frontend uses this to redirect
+        "org_type": org.org_type, # Frontend uses this to redirect
+        "expires_at": expires_at
     }
 
 @router.post("/logout")
