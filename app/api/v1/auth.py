@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.schemas.auth import UserRegister, UserLogin, Token
@@ -90,14 +90,14 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     }
 
 @router.post("/login", response_model=Token)
-def login(user_in: UserLogin, db: Session = Depends(get_db)):
+def login(response: Response, user_in: UserLogin, db: Session = Depends(get_db)):
     # 1. Authenticate User
     user = db.query(User).filter(User.email == user_in.email).first()
     
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Email not registered!",
+            detail="Email not registered. Please sign up first.",
         )
 
     if not verify_password(user_in.password, user.hashed_password):
@@ -127,8 +127,29 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
         expires_delta=access_token_expires
     )
 
+    # 4. Set HttpOnly Cookie
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=settings.ENVIRONMENT == "production", # Only secure in production (HTTPS)
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "org_type": org.org_type # Frontend uses this to redirect
     }
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax"
+    )
+    return {"message": "Logged out successfully"}
