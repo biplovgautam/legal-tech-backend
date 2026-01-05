@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
 from app.schemas.auth import UserRegister, UserLogin, Token
 from app.models.user import User
 from app.models.organization import Organization
@@ -9,18 +8,12 @@ from app.models.user_role import UserRole
 from app.core.security import get_password_hash, verify_password, create_access_token
 from datetime import timedelta
 from app.core.config import settings
+from app.api import deps
 
 router = APIRouter()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(user_in: UserRegister, db: Session = Depends(get_db)):
+def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
     # 1. Check if user with email already exists
     user = db.query(User).filter(User.email == user_in.admin_email).first()
     if user:
@@ -90,7 +83,7 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     }
 
 @router.post("/login", response_model=Token)
-def login(response: Response, user_in: UserLogin, db: Session = Depends(get_db)):
+def login(response: Response, user_in: UserLogin, db: Session = Depends(deps.get_db)):
     # 1. Authenticate User
     user = db.query(User).filter(User.email == user_in.email).first()
     
@@ -145,7 +138,7 @@ def login(response: Response, user_in: UserLogin, db: Session = Depends(get_db))
     }
 
 @router.post("/logout")
-def logout(response: Response):
+def logout(response: Response, current_user: User = Depends(deps.get_current_user)):
     response.delete_cookie(
         key="access_token",
         httponly=True,
