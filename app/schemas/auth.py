@@ -21,3 +21,12 @@ class UserRegister(BaseModel):
         if org_type == "firm" and not v:
             raise ValueError("Organization name is required for law firms")
         return v
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    org_type: str

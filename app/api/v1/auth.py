@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
-from app.schemas.auth import UserRegister
+from app.schemas.auth import UserRegister, UserLogin, Token
 from app.models.user import User
 from app.models.organization import Organization
 from app.models.role import Role
 from app.models.user_role import UserRole
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password, create_access_token
+from datetime import timedelta
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -85,4 +87,48 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
             "email": new_user.email,
             "name": new_user.name
         }
+    }
+
+@router.post("/login", response_model=Token)
+def login(user_in: UserLogin, db: Session = Depends(get_db)):
+    # 1. Authenticate User
+    user = db.query(User).filter(User.email == user_in.email).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Email not registered!",
+        )
+
+    if not verify_password(user_in.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+
+    # 2. Get Organization Type for Dashboard Routing
+    # We join with Organization to get the type
+    org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # 3. Create Access Token with Tenant Context
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={
+            "sub": str(user.id),
+            "org_id": str(user.organization_id),
+            "org_type": org.org_type
+        },
+        expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "org_type": org.org_type # Frontend uses this to redirect
     }
