@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import Literal
+from typing import Literal, List, Union, Any
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -12,6 +13,18 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     DATABASE_URL: str
+
+    # CORS Settings
+    ALLOWED_HOSTS: Union[str, List[str]] = ["*"]
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def parse_allowed_hosts(cls, v: Union[str, List[str]]) -> Any:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
 
     # JWT Settings
     SECRET_KEY: str
