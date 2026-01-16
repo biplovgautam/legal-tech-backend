@@ -94,8 +94,17 @@ def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
         db.add(admin_role)
         db.commit()
         
-        member_role = MemberRole(member_id=membership.id, role_id=admin_role.id)
-        db.add(member_role)
+        member_role_admin = MemberRole(member_id=membership.id, role_id=admin_role.id)
+        db.add(member_role_admin)
+        db.commit()
+
+        # Create Lawyer Role & Assign (So they appear as both Admin and Lawyer)
+        lawyer_role = Role(name="FIRM_LAWYER", organization_id=new_org.id)
+        db.add(lawyer_role)
+        db.commit()
+
+        member_role_lawyer = MemberRole(member_id=membership.id, role_id=lawyer_role.id)
+        db.add(member_role_lawyer)
         db.commit()
         
         org_response_data = {
@@ -130,7 +139,8 @@ def register(user_in: UserRegister, db: Session = Depends(deps.get_db)):
         
         # Create Lawyer Role & Assign
         # Solo lawyers act as both Admin and Principle Lawyer
-        role = Role(name="SOLO_PRACTITIONER", organization_id=new_org.id)
+        # Role name changed from SOLO_PRACTITIONER to SOLO_LAWYER for clarity in frontend redirection
+        role = Role(name="SOLO_LAWYER", organization_id=new_org.id)
         db.add(role)
         db.commit()
         

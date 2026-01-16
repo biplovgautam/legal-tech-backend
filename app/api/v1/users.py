@@ -25,6 +25,7 @@ def read_user_me(
         OrganizationMember.status == "ACTIVE"
     ).first()
 
+    org_id = None
     org_name = None
     org_type = None
     role_names = []
@@ -33,6 +34,7 @@ def read_user_me(
         # Fetch Organization
         org = db.query(Organization).filter(Organization.id == membership.organization_id).first()
         if org:
+            org_id = org.id
             org_name = org.name
             org_type = org.org_type
 
@@ -45,7 +47,9 @@ def read_user_me(
         "id": current_user.id,
         "user_name": current_user.name,
         "user_email": current_user.email,
+        "org_id": org_id,
         "org_name": org_name,
         "org_type": org_type,
+        "primary_profession": current_user.primary_profession,
         "user_roles": role_names
     }
